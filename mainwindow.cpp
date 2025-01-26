@@ -46,28 +46,6 @@ void MainWindow::on_pushButton_folderSelect_clicked()
     }
 }
 
-QList<QFileInfo> getFilesRecursively(const QString &dirPath) {
-    QDir dir(dirPath);
-    QFileInfoList list = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Readable);
-    QList<QFileInfo> ret;
-
-    for (QFileInfo &fileInfo : list) {
-        if (fileInfo.isDir()) {
-            qDebug() << "Directory: " << fileInfo.absoluteFilePath();
-            getFilesRecursively(fileInfo.absoluteFilePath());
-        } else {
-            // qDebug() << "File:" << fileInfo.absoluteFilePath()
-            //          << "Size:" << fileInfo.size() << "bytes"
-            //          << "Last Modified:" << fileInfo.lastModified();
-            if (fileInfo.isFile())
-            {
-                ret.push_back(fileInfo);
-            }
-        }
-    }
-    return ret;
-}
-
 class FileInfoModel : public QStandardItemModel {
 public:
     FileInfoModel(const QString &dirPath) {
@@ -76,7 +54,7 @@ public:
 
         for (QFileInfo &fileInfo : files) {
             if (fileInfo.isDir()) {
-                getFilesRecursively(fileInfo.absoluteFilePath());
+                FileInfoModel(fileInfo.absoluteFilePath());
             } else {
                 if (fileInfo.isFile())
                 {
@@ -93,10 +71,9 @@ private:
         QString filePath = fileInfo.absoluteFilePath();
         QString fileContent = getFileContent(fileInfo.absoluteFilePath());
 
-        QString displayText = fileName + "|" + fileSize + "\n" + filePath + "\n" + fileContent;
+        QString displayText = fileName + "|" + fileSize + "|" + filePath + "|" + fileContent;
         QStandardItem *item = new QStandardItem(displayText);
         appendRow(item);
-
     }
 
     QString getFileContent(const QString &filePath) {
@@ -123,6 +100,13 @@ protected:
 
         painter->save();
         // painter->setPen(option.state & QStyle::State_Selected ? Qt::white : Qt::blue);
+        if (option.state & QStyle::State_Selected) {
+            painter->fillRect(option.rect, option.palette.highlight());
+        } else if (option.state & QStyle::State_MouseOver) {
+            painter->fillRect(option.rect, option.palette.color(QPalette::Highlight));
+        } else {
+            painter->fillRect(option.rect, option.palette.color(QPalette::Base));
+        }
 
         QRect rect = option.rect;
         int x = rect.left();
@@ -143,14 +127,14 @@ protected:
         x += painter->fontMetrics().horizontalAdvance(" | " + fileSize);
 
         // 文件路径（绿色字体）
-        QString filePath = text.section("\n", 0, 0).section("|", 2, 2);  // 获取文件路径
+        QString filePath = text.section("|", 2, 2);  // 获取文件路径
         painter->setFont(QFont("Arial", 10));
         painter->setPen(QColor(0, 128, 0));  // 绿色
         painter->drawText(x, y, "\n" + filePath);
         x += painter->fontMetrics().horizontalAdvance("\n" + filePath);
 
         // 文件内容（灰色字体）
-        QString fileContent = text.section("\n", 1, 1);  // 获取文件内容
+        QString fileContent = text.section("|", 3, 3);  // 获取文件内容
         painter->setFont(QFont("Arial", 10));
         painter->setPen(QColor(169, 169, 169));  // 灰色
         painter->drawText(x, y, "\n" + fileContent);
