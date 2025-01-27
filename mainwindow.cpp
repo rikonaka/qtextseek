@@ -13,6 +13,7 @@
 #include <QColor>
 #include <QStyledItemDelegate>
 #include <QPainter>
+#include <QThread>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -58,24 +59,26 @@ public:
             } else {
                 if (fileInfo.isFile())
                 {
-                    addItem(fileInfo);
+                    parseItem(fileInfo);
                 }
             }
         }
     }
 
 private:
-    void addItem(const QFileInfo& fileInfo) {
+    void parseItem(const QFileInfo& fileInfo) {
         QString fileName = fileInfo.fileName();
         QString fileSize = QString::number(fileInfo.size()) + " bytes";
         QString filePath = fileInfo.absoluteFilePath();
-        QString fileContent = getFileContent(fileInfo.absoluteFilePath());
+        QString fileContent = FileInfoModel::getFileContent(filePath);
 
-        QString displayText = fileName + "|" + fileSize + "|" + filePath + "|" + fileContent;
-        QStandardItem *item = new QStandardItem(displayText);
-        appendRow(item);
+        QList<QStandardItem *> newRow;
+        newRow.append(new QStandardItem(fileName));
+        newRow.append(new QStandardItem(fileSize));
+        newRow.append(new QStandardItem(filePath));
+        newRow.append(new QStandardItem(fileContent));
+        appendRow(newRow);
     }
-
     QString getFileContent(const QString &filePath) {
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -85,61 +88,8 @@ private:
         }
 
         QTextStream in(&file);
-        QString content = in.read(100);
+        QString content = in.read(10); // for test
         return content.isEmpty() ? "Empty file!" : content;
-    }
-};
-
-class FileInfoDelegate : public QStyledItemDelegate {
-public:
-    FileInfoDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
-
-protected:
-    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {
-        QString text = index.data().toString();
-
-        painter->save();
-        // painter->setPen(option.state & QStyle::State_Selected ? Qt::white : Qt::blue);
-        if (option.state & QStyle::State_Selected) {
-            painter->fillRect(option.rect, option.palette.highlight());
-        } else if (option.state & QStyle::State_MouseOver) {
-            painter->fillRect(option.rect, option.palette.color(QPalette::Highlight));
-        } else {
-            painter->fillRect(option.rect, option.palette.color(QPalette::Base));
-        }
-
-        QRect rect = option.rect;
-        int x = rect.left();
-        int y = rect.top();
-
-        // 绘制文件名（蓝色，较大字体）
-        QString fileName = text.section("|", 0, 0);  // 获取文件名
-        painter->setFont(QFont("Arial", 12, QFont::Bold));  // 设置较大字体
-        painter->setPen(QColor(0, 0, 255));  // 蓝色
-        painter->drawText(x, y, fileName);
-        x += painter->fontMetrics().horizontalAdvance(fileName);
-
-        // 文件大小（灰色字体）
-        QString fileSize = text.section("|", 1, 1);  // 获取文件大小
-        painter->setFont(QFont("Arial", 10));
-        painter->setPen(QColor(169, 169, 169));  // 灰色
-        painter->drawText(x, y, " | " + fileSize);
-        x += painter->fontMetrics().horizontalAdvance(" | " + fileSize);
-
-        // 文件路径（绿色字体）
-        QString filePath = text.section("|", 2, 2);  // 获取文件路径
-        painter->setFont(QFont("Arial", 10));
-        painter->setPen(QColor(0, 128, 0));  // 绿色
-        painter->drawText(x, y, "\n" + filePath);
-        x += painter->fontMetrics().horizontalAdvance("\n" + filePath);
-
-        // 文件内容（灰色字体）
-        QString fileContent = text.section("|", 3, 3);  // 获取文件内容
-        painter->setFont(QFont("Arial", 10));
-        painter->setPen(QColor(169, 169, 169));  // 灰色
-        painter->drawText(x, y, "\n" + fileContent);
-
-        painter->restore();
     }
 };
 
@@ -147,11 +97,20 @@ void MainWindow::on_searchButton_clicked()
 {
     QString input = ui->searchEdit->text();
     QString folder = ui->lineEdit_folderSelect->text();
-    if (!input.isEmpty() && !folder.isEmpty()) {
+    // if (!input.isEmpty() && !folder.isEmpty()) {
+    if (!folder.isEmpty()) {
         FileInfoModel* model = new FileInfoModel(folder);
-        ui->listView_results->setModel(model);
-        FileInfoDelegate* delegate = new FileInfoDelegate(ui->listView_results);
-        ui->listView_results->setItemDelegate(delegate);
+
+        model->setHorizontalHeaderLabels({tr("name"), tr("size"), tr("path"), tr("content")});
+        ui->tableView_results->setModel(model);
+        ui->tableView_results->setSortingEnabled(true);
+        ui->tableView_results->setEditTriggers(QAbstractItemView::DoubleClicked);
+        ui->tableView_results->setSelectionMode(QAbstractItemView::SingleSelection);
+        ui->tableView_results->setSelectionBehavior(QAbstractItemView::SelectRows);
+        ui->tableView_results->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        ui->tableView_results->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        ui->tableView_results->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+        ui->tableView_results->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     }
 }
 
