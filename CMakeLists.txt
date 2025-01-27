@@ -11,6 +11,7 @@ qt_add_executable(qtextseek
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    filetraversethread.h
 )
 
 qt_add_translations(

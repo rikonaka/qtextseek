@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QFileInfo>>
+#include <QStandardItemModel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -18,13 +20,12 @@ public:
     ~MainWindow();
 
 private slots:
-    //void on_searchButton_clicked();
-
-    //void on_pushButton_folderSelect_clicked();
-
     void on_pushButton_folderSelect_clicked();
-
     void on_searchButton_clicked();
+    void updateProgressTotal(int value);
+    void updateProgress(int value);
+    void onFinished();
+    void updateFileInfo(QStandardItemModel *model);
 
 private:
     Ui::MainWindow *ui;

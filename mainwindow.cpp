@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "filetraversethread.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -49,28 +50,11 @@ void MainWindow::on_pushButton_folderSelect_clicked()
 
 class FileInfoModel : public QStandardItemModel {
 public:
-    FileInfoModel(const QString &dirPath) {
-        QDir dir(dirPath);
-        QFileInfoList files = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Readable);
-
-        for (QFileInfo &fileInfo : files) {
-            if (fileInfo.isDir()) {
-                FileInfoModel(fileInfo.absoluteFilePath());
-            } else {
-                if (fileInfo.isFile())
-                {
-                    parseItem(fileInfo);
-                }
-            }
-        }
-    }
-
-private:
-    void parseItem(const QFileInfo& fileInfo) {
+    void AddItem(const QFileInfo& fileInfo) {
         QString fileName = fileInfo.fileName();
         QString fileSize = QString::number(fileInfo.size()) + " bytes";
         QString filePath = fileInfo.absoluteFilePath();
-        QString fileContent = FileInfoModel::getFileContent(filePath);
+        QString fileContent = FileInfoModel::checkFileContent(filePath);
 
         QList<QStandardItem *> newRow;
         newRow.append(new QStandardItem(fileName));
@@ -79,7 +63,7 @@ private:
         newRow.append(new QStandardItem(fileContent));
         appendRow(newRow);
     }
-    QString getFileContent(const QString &filePath) {
+    QString checkFileContent(const QString &filePath) {
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QString msg = "Can not open file: ";
@@ -88,7 +72,7 @@ private:
         }
 
         QTextStream in(&file);
-        QString content = in.read(10); // for test
+        QString content = in.read(10);
         return content.isEmpty() ? "Empty file!" : content;
     }
 };
@@ -99,6 +83,14 @@ void MainWindow::on_searchButton_clicked()
     QString folder = ui->lineEdit_folderSelect->text();
     // if (!input.isEmpty() && !folder.isEmpty()) {
     if (!folder.isEmpty()) {
+
+        FileTraverseThread *t = new FileTraverseThread(folder, this);
+        connect(t, &FileTraverseThread::progressUpdatedTotal, this, &MainWindow::updateProgressTotal);
+        connect(t, &FileTraverseThread::progressUpdated, this, &MainWindow::updateProgress);
+        connect(t, &FileTraverseThread::finished, this, &MainWindow::onFinished);
+
+        t->start();
+
         FileInfoModel* model = new FileInfoModel(folder);
 
         model->setHorizontalHeaderLabels({tr("name"), tr("size"), tr("path"), tr("content")});
@@ -112,5 +104,25 @@ void MainWindow::on_searchButton_clicked()
         ui->tableView_results->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
         ui->tableView_results->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     }
+}
+
+void MainWindow::updateProgressTotal(int value)
+{
+    ui->progressBar->setRange(0, value);
+}
+
+void MainWindow::updateProgress(int value)
+{
+    ui->progressBar->setValue(value);
+}
+
+void MainWindow::onFinished()
+{
+    ui->progressBar->deleteLater();
+}
+
+void MainWindow::updateFileInfo(QFileInfo *fileInfo)
+{
+    ui->tableView_results->addItem(QString("File: %1, Size: %2 bytes").arg(fileName).arg(fileSize));
 }
 
