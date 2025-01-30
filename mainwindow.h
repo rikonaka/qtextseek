@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QFileInfo>>
+#include <QFileInfo>
 #include <QStandardItemModel>
 
 QT_BEGIN_NAMESPACE
@@ -22,9 +22,7 @@ public:
 private slots:
     void on_pushButton_folderSelect_clicked();
     void on_searchButton_clicked();
-    void updateProgressTotal(int value);
-    void updateProgress(int value);
-    void onFinished();
+    void updateProgress(QString file);
     void updateFileInfo(QStandardItemModel *model);
 
 private:

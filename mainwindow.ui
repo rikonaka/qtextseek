@@ -27,6 +27,89 @@
     </sizepolicy>
    </property>
    <layout class="QGridLayout" name="gridLayout_3">
+    <item row="1" column="0">
+     <layout class="QGridLayout" name="gridLayout_middle">
+      <item row="0" column="2">
+       <widget class="QPushButton" name="pushButton_folderSelect">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Folder Select</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="pushButton_fileExtension">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>File Extension</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLineEdit" name="lineEdit_folderSelect">
+        <property name="text">
+         <string>C:\Users\super\Desktop\Code\nmap-7.95</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLineEdit" name="lineEdit_fileExtension">
+        <property name="text">
+         <string>doc,docm,docx,dps,dpt,eid,eip,eis,epub,et,ett,htm,html,hwp,md,mht,mhtml,odp,ods,odt,ofd,pdf,ppt,pptm,pptx,rtf,txt,wps,wpt,xls,xlsm,xlsx</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="checkBox_matchOriginal">
+        <property name="text">
+         <string>Match Original</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="checkBox_caseSensitive">
+        <property name="text">
+         <string>Case Sensitive</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="checkBox_matchWholeWord">
+        <property name="text">
+         <string>Match Whole Word</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="checkBox_fileNameOnly">
+        <property name="text">
+         <string>File Name Only</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="0">
+     <layout class="QGridLayout" name="gridLayout_bottom">
+      <item row="0" column="0">
+       <widget class="QTableView" name="tableView_results">
+        <property name="frameShape">
+         <enum>QFrame::Shape::StyledPanel</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QTextEdit" name="textEdit_results"/>
+      </item>
+     </layout>
+    </item>
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout_top" rowstretch="0">
       <property name="leftMargin">
@@ -75,113 +158,10 @@
       </item>
      </layout>
     </item>
-    <item row="2" column="0">
-     <layout class="QGridLayout" name="gridLayout_bottom">
-      <item row="0" column="0">
-       <widget class="QTableView" name="tableView_results">
-        <property name="frameShape">
-         <enum>QFrame::Shape::StyledPanel</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QTextEdit" name="textEdit_results"/>
-      </item>
-     </layout>
-    </item>
-    <item row="1" column="0">
-     <layout class="QGridLayout" name="gridLayout_middle">
-      <item row="0" column="2">
-       <widget class="QPushButton" name="pushButton_folderSelect">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Folder Select</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QPushButton" name="pushButton_fileExtension">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>File Extension</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="QLineEdit" name="lineEdit_folderSelect"/>
-      </item>
-      <item row="1" column="3">
-       <widget class="QLineEdit" name="lineEdit_fileExtension">
-        <property name="text">
-         <string>doc,docm,docx,dps,dpt,eid,eip,eis,epub,et,ett,htm,html,hwp,md,mht,mhtml,odp,ods,odt,ofd,pdf,ppt,pptm,pptx,rtf,txt,wps,wpt,xls,xlsm,xlsx</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QCheckBox" name="checkBox_matchOriginal">
-        <property name="text">
-         <string>Match Original</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QCheckBox" name="checkBox_caseSensitive">
-        <property name="text">
-         <string>Case Sensitive</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QCheckBox" name="checkBox_matchWholeWord">
-        <property name="text">
-         <string>Match Whole Word</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QCheckBox" name="checkBox_fileNameOnly">
-        <property name="text">
-         <string>File Name Only</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
     <item row="3" column="0">
-     <widget class="QProgressBar" name="progressBar">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="baseSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="value">
-       <number>0</number>
-      </property>
-      <property name="textVisible">
-       <bool>false</bool>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Orientation::Horizontal</enum>
-      </property>
-      <property name="invertedAppearance">
-       <bool>false</bool>
-      </property>
-      <property name="textDirection">
-       <enum>QProgressBar::Direction::TopToBottom</enum>
+     <widget class="QLabel" name="labelStatus">
+      <property name="text">
+       <string>Done!</string>
       </property>
      </widget>
     </item>
