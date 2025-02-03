@@ -52,10 +52,10 @@ void MainWindow::on_searchButton_clicked()
 {
     QString input = ui->searchEdit->text();
     QString folder = ui->lineEdit_folderSelect->text();
-    // if (!input.isEmpty() && !folder.isEmpty()) {
-    if (!folder.isEmpty()) {
+    if (!input.isEmpty() && !folder.isEmpty()) {
+    // if (!folder.isEmpty()) {
 
-        FileTraverseThread *t = new FileTraverseThread(folder, this);
+        FileTraverseThread *t = new FileTraverseThread(folder, input, this);
         connect(t, &FileTraverseThread::updateProgress, this, &MainWindow::updateProgress);
         connect(t, &FileTraverseThread::updateFileInfo, this, &MainWindow::updateFileInfo);
 

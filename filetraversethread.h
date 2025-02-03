@@ -19,8 +19,8 @@ class FileTraverseThread : public QThread
     Q_OBJECT
 
 public:
-    explicit FileTraverseThread(const QString &dirPath, QObject *parent = nullptr)
-        : QThread(parent), dirPath(dirPath) {}
+    explicit FileTraverseThread(const QString &dirPath, const QString &target, QObject *parent = nullptr)
+        : QThread(parent), dirPath(dirPath), target(target) {}
 
 signals:
     void updateProgress(QString file);
@@ -28,7 +28,7 @@ signals:
 
 protected:
     void run() override {
-        const QList<MyFileInfo> cfi = FileTraverseThread::traverse(dirPath);
+        const QList<MyFileInfo> cfi = FileTraverseThread::traverse(dirPath, target);
         qDebug() << "files length: " << cfi.length();
 
         QStandardItemModel *model = new QStandardItemModel;
@@ -52,7 +52,8 @@ protected:
 
 private:
     QString dirPath;
-    QList<MyFileInfo>traverse(const QString &dirPath)
+    QString target;
+    QList<MyFileInfo>traverse(const QString &dirPath, const QString &target)
     {
         QDir dir(dirPath);
         QFileInfoList files = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Readable);
@@ -62,7 +63,7 @@ private:
         {
             if (fileInfo.isDir())
             {
-                QList<MyFileInfo> xs = FileTraverseThread::traverse(fileInfo.absoluteFilePath());
+                QList<MyFileInfo> xs = FileTraverseThread::traverse(fileInfo.absoluteFilePath(), target);
                 ret += xs;
             }
             else
@@ -73,8 +74,10 @@ private:
                     cfi.fileName = fileInfo.fileName();
                     cfi.fileSize = fileInfo.size();
                     cfi.filePath = fileInfo.absoluteFilePath();
-                    cfi.fileContent = FileTraverseThread::checkFileContent(cfi.filePath);
-                    ret.append(cfi);
+                    cfi.fileContent = FileTraverseThread::checkFileContent(cfi.filePath, target);
+                    if (cfi.fileContent.length() > 0) {
+                        ret.append(cfi);
+                    }
 
                     emit updateProgress(fileInfo.fileName());
                 }
@@ -82,7 +85,7 @@ private:
         }
         return ret;
     }
-    QString checkFileContent(const QString &filePath) {
+    QString checkFileContent(const QString &filePath, const QString &target) {
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QString msg = "Can not open file: ";
@@ -91,9 +94,11 @@ private:
         }
 
         QTextStream in(&file);
-        QString content = in.read(10);
+        // QString content = in.read(10);
+        QString content = in.readAll();
         file.close();
-        return content.isEmpty() ? "Empty file!" : content;
+
+        return content.contains(target) ? content : "";
     }
 };
 
