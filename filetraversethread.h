@@ -1,7 +1,6 @@
 #ifndef FILETRAVERSETHREAD_H
 #define FILETRAVERSETHREAD_H
 
-#include <QThread>
 #include <QString>
 #include <QDir>
 #include <QFileInfoList>
@@ -14,21 +13,18 @@ extern struct MyFileInfo {
     QString fileContent;
 } my_file_info;
 
-class FileTraverseThread : public QThread
+class FileTraverseWorker : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit FileTraverseThread(const QString &dirPath, const QString &target, QObject *parent = nullptr)
-        : QThread(parent), dirPath(dirPath), target(target) {}
+    bool stopRequested;
+    explicit FileTraverseWorker(const QString &dirPath, const QString &target, const QList<QString> &extensions)
+        : dirPath(dirPath), target(target), extensions(extensions) {}
 
-signals:
-    void updateProgress(QString file);
-    void updateFileInfo(QStandardItemModel *model);
-
-protected:
-    void run() override {
-        const QList<MyFileInfo> cfi = FileTraverseThread::traverse(dirPath, target);
+    void run() {
+        stopRequested = false;
+        const QList<MyFileInfo> cfi = FileTraverseWorker::traverse(dirPath, target, extensions);
         qDebug() << "files length: " << cfi.length();
 
         QStandardItemModel *model = new QStandardItemModel;
@@ -50,10 +46,16 @@ protected:
         }
     }
 
+signals:
+    void updateProgress(QString file, bool ship);
+    void updateFileInfo(QStandardItemModel *model);
+
+
 private:
     QString dirPath;
     QString target;
-    QList<MyFileInfo>traverse(const QString &dirPath, const QString &target)
+    QList<QString> extensions;
+    QList<MyFileInfo>traverse(const QString &dirPath, const QString &target, const QList<QString> &extensions)
     {
         QDir dir(dirPath);
         QFileInfoList files = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Readable);
@@ -61,27 +63,45 @@ private:
         QList<MyFileInfo> ret;
         for (QFileInfo &fileInfo : files)
         {
-            if (fileInfo.isDir())
+            if (!stopRequested)
             {
-                QList<MyFileInfo> xs = FileTraverseThread::traverse(fileInfo.absoluteFilePath(), target);
-                ret += xs;
-            }
-            else
-            {
-                if (fileInfo.isFile())
+                if (fileInfo.isDir())
                 {
-                    MyFileInfo cfi;
-                    cfi.fileName = fileInfo.fileName();
-                    cfi.fileSize = fileInfo.size();
-                    cfi.filePath = fileInfo.absoluteFilePath();
-                    cfi.fileContent = FileTraverseThread::checkFileContent(cfi.filePath, target);
-                    if (cfi.fileContent.length() > 0) {
-                        ret.append(cfi);
-                    }
+                    QList<MyFileInfo> xs = FileTraverseWorker::traverse(fileInfo.absoluteFilePath(), target, extensions);
+                    ret += xs;
+                }
+                else
+                {
+                    if (fileInfo.isFile())
+                    {
+                        QString fileName = fileInfo.fileName();
+                        QStringList words = fileName.split(".");
+                        if (words.length() >1)
+                        {
+                            QString ext = words.last();
+                            ext = ext.trimmed();
+                            if (extensions.contains(ext))
+                            {
+                                MyFileInfo cfi;
+                                cfi.fileName = fileInfo.fileName();
+                                cfi.fileSize = fileInfo.size();
+                                cfi.filePath = fileInfo.absoluteFilePath();
+                                cfi.fileContent = FileTraverseWorker::checkFileContent(cfi.filePath, target);
+                                if (cfi.fileContent.length() > 0) {
+                                    ret.append(cfi);
+                                }
 
-                    emit updateProgress(fileInfo.fileName());
+                                emit updateProgress(fileInfo.fileName(), false);
+                            }
+                            else
+                               emit updateProgress(fileInfo.fileName(), true);
+                        }
+                        else
+                            emit updateProgress(fileName, true);
+                    }
                 }
             }
+
         }
         return ret;
     }

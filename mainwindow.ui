@@ -55,7 +55,7 @@
       <item row="0" column="3">
        <widget class="QLineEdit" name="lineEdit_folderSelect">
         <property name="text">
-         <string>C:\Users\super\Desktop\Code\nmap-7.95</string>
+         <string>C:\Users\Hero\Desktop\qtextseek\test</string>
         </property>
        </widget>
       </item>
@@ -124,6 +124,19 @@
       <property name="bottomMargin">
        <number>5</number>
       </property>
+      <item row="0" column="0">
+       <widget class="QLineEdit" name="searchEdit">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>8</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="placeholderText">
+         <string>What your wanna search for?</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="2">
        <widget class="QPushButton" name="searchButton">
         <property name="sizePolicy">
@@ -143,16 +156,10 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLineEdit" name="searchEdit">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>8</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="placeholderText">
-         <string>What your wanna search for?</string>
+      <item row="0" column="3">
+       <widget class="QPushButton" name="stopButton">
+        <property name="text">
+         <string>Stop</string>
         </property>
        </widget>
       </item>
@@ -173,7 +180,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>19</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>
