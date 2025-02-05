@@ -6,13 +6,6 @@
 #include <QFileInfoList>
 #include <QStandardItemModel>
 
-extern struct MyFileInfo {
-    QString fileName;
-    qint64 fileSize;
-    QString filePath;
-    QString fileContent;
-} my_file_info;
-
 class FileTraverseWorker : public QObject
 {
     Q_OBJECT
@@ -24,26 +17,13 @@ public:
 
     void run() {
         stopRequested = false;
-        const QList<MyFileInfo> cfi = FileTraverseWorker::traverse(dirPath, target, extensions);
-        qDebug() << "files length: " << cfi.length();
 
         QStandardItemModel *model = new QStandardItemModel;
         model->setHorizontalHeaderLabels({tr("name"), tr("size"), tr("path"), tr("content")});
         emit updateFileInfo(model);
+        dataModel = model;
 
-        for (const MyFileInfo &fileInfo : cfi) {
-            QString fileName = fileInfo.fileName;
-            QString fileSize = QString::number(fileInfo.fileSize) + " bytes";
-            QString filePath = fileInfo.filePath;
-            QString fileContent = fileInfo.fileContent;
-
-            QList<QStandardItem *> newRow;
-            newRow.append(new QStandardItem(fileName));
-            newRow.append(new QStandardItem(fileSize));
-            newRow.append(new QStandardItem(filePath));
-            newRow.append(new QStandardItem(fileContent));
-            model->appendRow(newRow);
-        }
+        FileTraverseWorker::traverse(dirPath, target, extensions);
     }
 
 signals:
@@ -55,21 +35,18 @@ private:
     QString dirPath;
     QString target;
     QList<QString> extensions;
-    QList<MyFileInfo>traverse(const QString &dirPath, const QString &target, const QList<QString> &extensions)
+    QStandardItemModel *dataModel;
+    void traverse(const QString &dirPath, const QString &target, const QList<QString> &extensions)
     {
         QDir dir(dirPath);
         QFileInfoList files = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Readable);
 
-        QList<MyFileInfo> ret;
         for (QFileInfo &fileInfo : files)
         {
             if (!stopRequested)
             {
                 if (fileInfo.isDir())
-                {
-                    QList<MyFileInfo> xs = FileTraverseWorker::traverse(fileInfo.absoluteFilePath(), target, extensions);
-                    ret += xs;
-                }
+                    FileTraverseWorker::traverse(fileInfo.absoluteFilePath(), target, extensions);
                 else
                 {
                     if (fileInfo.isFile())
@@ -82,14 +59,17 @@ private:
                             ext = ext.trimmed();
                             if (extensions.contains(ext))
                             {
-                                MyFileInfo cfi;
-                                cfi.fileName = fileInfo.fileName();
-                                cfi.fileSize = fileInfo.size();
-                                cfi.filePath = fileInfo.absoluteFilePath();
-                                cfi.fileContent = FileTraverseWorker::checkFileContent(cfi.filePath, target);
-                                if (cfi.fileContent.length() > 0) {
-                                    ret.append(cfi);
-                                }
+                                QString fileName = fileInfo.fileName();
+                                QString fileSize = QString::number(fileInfo.size()) + " bytes";
+                                QString filePath = fileInfo.absoluteFilePath();
+                                QString fileContent = FileTraverseWorker::checkFileContent(filePath, target);
+
+                                QList<QStandardItem *> newRow;
+                                newRow.append(new QStandardItem(fileName));
+                                newRow.append(new QStandardItem(fileSize));
+                                newRow.append(new QStandardItem(filePath));
+                                newRow.append(new QStandardItem(fileContent));
+                                dataModel->appendRow(newRow);
 
                                 emit updateProgress(fileInfo.fileName(), false);
                             }
@@ -103,7 +83,6 @@ private:
             }
 
         }
-        return ret;
     }
     QString checkFileContent(const QString &filePath, const QString &target) {
         QFile file(filePath);
@@ -115,7 +94,21 @@ private:
 
         QTextStream in(&file);
         // QString content = in.read(10);
-        QString content = in.readAll();
+        // QString content = in.readAll();
+        QString content;
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+
+            QString filteredLine;
+            for (QChar &c : line) {
+                if (c.isPrint()) {
+                    filteredLine.append(c);
+                }
+            }
+
+            content.append(filteredLine + "\n");
+        }
+
         file.close();
 
         return content.contains(target) ? content : "";

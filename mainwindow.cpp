@@ -21,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    searchThread = nullptr;
+    fileWorker = nullptr;
     ui->setupUi(this);
 }
 
@@ -47,11 +49,27 @@ void critical(QWidget *parent, const char *msg)
 
 void MainWindow::stopSearchThread()
 {
-    fileWorker->stopRequested = true;
-    //searchThread->exit();
-    searchThread->quit();
-    searchThread->wait();
-    delete fileWorker;
+    if (fileWorker)
+        fileWorker->stopRequested = true;
+    if (searchThread)
+    {
+        if (searchThread->isRunning())
+        {
+            searchThread->quit();
+            searchThread->wait();
+        }
+    }
+    if (fileWorker)
+    {
+        delete fileWorker;
+        fileWorker = nullptr;
+
+    }
+    if (searchThread)
+    {
+        delete searchThread;
+        searchThread = nullptr;
+    }
 }
 
 void MainWindow::on_pushButton_folderSelect_clicked()
@@ -77,9 +95,6 @@ QList<QString> splitExtension(QString *ext)
 
 void MainWindow::on_searchButton_clicked()
 {
-    if (!fileWorker)
-        delete fileWorker;
-
     QString input = ui->searchEdit->text();
     QString folder = ui->lineEdit_folderSelect->text();
     if (input.isEmpty())
@@ -109,6 +124,9 @@ void MainWindow::on_searchButton_clicked()
 
             workerThread->start();
             searchThread = workerThread;
+
+            if (fileWorker)
+                delete fileWorker;
             fileWorker = worker;
         }
     }
@@ -135,10 +153,10 @@ void MainWindow::updateFileInfoFunc(QStandardItemModel *model)
     ui->tableView_results->setEditTriggers(QAbstractItemView::DoubleClicked);
     ui->tableView_results->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableView_results->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableView_results->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    ui->tableView_results->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    ui->tableView_results->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui->tableView_results->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     ui->tableView_results->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
-    ui->tableView_results->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    //ui->tableView_results->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     ui->tableView_results->setColumnHidden(3, true); // hide column 3 and show it in right widgt
 
     // ui label done
@@ -162,7 +180,8 @@ void MainWindow::tableRowClicked(const QModelIndex &index)
 
 void MainWindow::on_stopButton_clicked()
 {
-    qDebug() << "stop";
+    //qDebug() << "stop";
     stopSearchThread();
+    ui->labelStatus->setText(tr("Stoped!"));
 }
 
