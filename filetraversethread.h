@@ -5,6 +5,8 @@
 #include <QDir>
 #include <QFileInfoList>
 #include <QStandardItemModel>
+#include <QRegularExpression>
+#include <QRegularExpressionMatchIterator>
 
 class FileTraverseWorker : public QObject
 {
@@ -41,37 +43,33 @@ private:
         QDir dir(dirPath);
         QFileInfoList files = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Readable);
 
-        for (QFileInfo &fileInfo : files)
-        {
-            if (!stopRequested)
-            {
+        for (QFileInfo &fileInfo : files) {
+            if (!stopRequested) {
                 if (fileInfo.isDir())
                     FileTraverseWorker::traverse(fileInfo.absoluteFilePath(), target, extensions);
-                else
-                {
-                    if (fileInfo.isFile())
-                    {
+                else {
+                    if (fileInfo.isFile()) {
                         QString fileName = fileInfo.fileName();
                         QStringList words = fileName.split(".");
-                        if (words.length() >1)
-                        {
+                        if (words.length() >1) {
                             QString ext = words.last();
                             ext = ext.trimmed();
-                            if (extensions.contains(ext))
-                            {
-                                QString fileName = fileInfo.fileName();
-                                QString fileSize = QString::number(fileInfo.size()) + " bytes";
+                            if (extensions.contains(ext)) {
                                 QString filePath = fileInfo.absoluteFilePath();
                                 QString fileContent = FileTraverseWorker::checkFileContent(filePath, target);
+                                if (fileContent.isEmpty()) {
+                                    QString fileName = fileInfo.fileName();
+                                    QString fileSize = QString::number(fileInfo.size()) + " bytes";
 
-                                QList<QStandardItem *> newRow;
-                                newRow.append(new QStandardItem(fileName));
-                                newRow.append(new QStandardItem(fileSize));
-                                newRow.append(new QStandardItem(filePath));
-                                newRow.append(new QStandardItem(fileContent));
-                                dataModel->appendRow(newRow);
+                                    QList<QStandardItem *> newRow;
+                                    newRow.append(new QStandardItem(fileName));
+                                    newRow.append(new QStandardItem(fileSize));
+                                    newRow.append(new QStandardItem(filePath));
+                                    newRow.append(new QStandardItem(fileContent));
+                                    dataModel->appendRow(newRow);
 
-                                emit updateProgress(fileInfo.fileName(), false);
+                                    emit updateProgress(fileInfo.fileName(), false);
+                                }
                             }
                             else
                                emit updateProgress(fileInfo.fileName(), true);
@@ -110,6 +108,16 @@ private:
         }
 
         file.close();
+
+        // regex work
+        QRegularExpression re(target);
+        QRegularExpressionMatch match = re.match(content);
+        if (match.hasMatch()) {
+            qDebug() << "Match found at position" << match.capturedStart();
+        } else {
+            qDebug() << "No match found.";
+        }
+
 
         return content.contains(target) ? content : "";
     }

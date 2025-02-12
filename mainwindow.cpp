@@ -51,22 +51,18 @@ void MainWindow::stopSearchThread()
 {
     if (fileWorker)
         fileWorker->stopRequested = true;
-    if (searchThread)
-    {
-        if (searchThread->isRunning())
-        {
+    if (searchThread) {
+        if (searchThread->isRunning()) {
             searchThread->quit();
             searchThread->wait();
         }
     }
-    if (fileWorker)
-    {
+    if (fileWorker) {
         delete fileWorker;
         fileWorker = nullptr;
 
     }
-    if (searchThread)
-    {
+    if (searchThread) {
         delete searchThread;
         searchThread = nullptr;
     }
@@ -86,8 +82,7 @@ QList<QString> splitExtension(QString *ext)
 {
     QList<QString> ret;
     QStringList split = ext->split(",");
-    for (QString &s: split)
-    {
+    for (QString &s: split) {
         ret.append(s.trimmed());
     }
     return ret;
@@ -97,18 +92,14 @@ void MainWindow::on_searchButton_clicked()
 {
     QString input = ui->searchEdit->text();
     QString folder = ui->lineEdit_folderSelect->text();
-    if (input.isEmpty())
-    {
+    if (input.isEmpty()) {
         warning(this, "Please input what your wanna search!");
     }
-    else
-    {
-        if (folder.isEmpty())
-        {
+    else {
+        if (folder.isEmpty()) {
             warning(this, "Please select the target folder!");
         }
-        else
-        {
+        else {
             QString ext = ui->lineEdit_fileExtension->text();
             QList<QString> extensions = splitExtension(&ext);
             FileTraverseWorker *worker = new FileTraverseWorker(folder, input, extensions);
