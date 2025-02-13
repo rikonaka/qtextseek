@@ -1,12 +1,9 @@
 #ifndef FILETRAVERSETHREAD_H
 #define FILETRAVERSETHREAD_H
 
-#include <QString>
 #include <QDir>
-#include <QFileInfoList>
 #include <QStandardItemModel>
 #include <QRegularExpression>
-#include <QRegularExpressionMatchIterator>
 
 class FileTraverseWorker : public QObject
 {
@@ -21,7 +18,7 @@ public:
         stopRequested = false;
 
         QStandardItemModel *model = new QStandardItemModel;
-        model->setHorizontalHeaderLabels({tr("name"), tr("size"), tr("path"), tr("content")});
+        model->setHorizontalHeaderLabels({tr("name"), tr("size"), tr("path"), "target"});
         emit updateFileInfo(model);
         dataModel = model;
 
@@ -29,7 +26,8 @@ public:
     }
 
 signals:
-    void updateProgress(QString file, bool ship);
+    void updateProgress(QString file, int status);
+    void updateProgressStoped();
     void updateFileInfo(QStandardItemModel *model);
 
 
@@ -56,70 +54,60 @@ private:
                             ext = ext.trimmed();
                             if (extensions.contains(ext)) {
                                 QString filePath = fileInfo.absoluteFilePath();
-                                QString fileContent = FileTraverseWorker::checkFileContent(filePath, target);
-                                if (fileContent.isEmpty()) {
+                                bool status = FileTraverseWorker::checkFileContent(filePath, target);
+                                if (status) {
                                     QString fileName = fileInfo.fileName();
                                     QString fileSize = QString::number(fileInfo.size()) + " bytes";
-
                                     QList<QStandardItem *> newRow;
                                     newRow.append(new QStandardItem(fileName));
                                     newRow.append(new QStandardItem(fileSize));
                                     newRow.append(new QStandardItem(filePath));
-                                    newRow.append(new QStandardItem(fileContent));
+                                    newRow.append(new QStandardItem(target));
                                     dataModel->appendRow(newRow);
 
-                                    emit updateProgress(fileInfo.fileName(), false);
-                                }
-                            }
-                            else
-                               emit updateProgress(fileInfo.fileName(), true);
-                        }
-                        else
-                            emit updateProgress(fileName, true);
+                                    emit updateProgress(fileName, 0);
+                                } else // not found target string in file
+                                    emit updateProgress(fileName, 2);
+                            } else
+                               emit updateProgress(fileName, 1);
+                        } else
+                            emit updateProgress(fileName, 1);
                     }
                 }
-            }
-
+            } else
+                emit updateProgressStoped();
         }
     }
-    QString checkFileContent(const QString &filePath, const QString &target) {
+    bool checkFileContent(const QString &filePath, const QString &target) {
         QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QString msg = "Can not open file: ";
             msg += filePath;
-            return msg;
+            qDebug() << msg;
+            return false;
         }
 
         QTextStream in(&file);
-        // QString content = in.read(10);
-        // QString content = in.readAll();
         QString content;
         while (!in.atEnd()) {
             QString line = in.readLine();
-
             QString filteredLine;
             for (QChar &c : line) {
                 if (c.isPrint()) {
                     filteredLine.append(c);
                 }
             }
-
             content.append(filteredLine + "\n");
         }
-
         file.close();
 
         // regex work
         QRegularExpression re(target);
         QRegularExpressionMatch match = re.match(content);
-        if (match.hasMatch()) {
-            qDebug() << "Match found at position" << match.capturedStart();
-        } else {
-            qDebug() << "No match found.";
-        }
-
-
-        return content.contains(target) ? content : "";
+        if (match.hasMatch())
+            return true;
+        else
+            return false;
     }
 };
 

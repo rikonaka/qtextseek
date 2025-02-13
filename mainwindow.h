@@ -25,7 +25,8 @@ private slots:
     void on_searchButton_clicked();
     void on_stopButton_clicked();
     /* my slots */
-    void updateProgressFunc(QString file, bool skip);
+    void updateProgressFunc(QString file, int status);
+    void updateProgressStopedFunc();
     void updateFileInfoFunc(QStandardItemModel *model);
     void tableRowClicked(const QModelIndex &index);
     void stopSearchThread();

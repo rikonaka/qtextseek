@@ -4,17 +4,6 @@
 
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QStringListModel>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
-#include <QStandardItem>
-#include <QStandardItemModel>
-#include <QTableView>
-#include <QFont>
-#include <QColor>
-#include <QStyledItemDelegate>
-#include <QPainter>
 #include <QThread>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -90,6 +79,8 @@ QList<QString> splitExtension(QString *ext)
 
 void MainWindow::on_searchButton_clicked()
 {
+    stopSearchThread();
+
     QString input = ui->searchEdit->text();
     QString folder = ui->lineEdit_folderSelect->text();
     if (input.isEmpty()) {
@@ -105,6 +96,7 @@ void MainWindow::on_searchButton_clicked()
             FileTraverseWorker *worker = new FileTraverseWorker(folder, input, extensions);
 
             connect(worker, &FileTraverseWorker::updateProgress, this, &MainWindow::updateProgressFunc);
+            connect(worker, &FileTraverseWorker::updateProgressStoped, this, &MainWindow::updateProgressStopedFunc);
             connect(worker, &FileTraverseWorker::updateFileInfo, this, &MainWindow::updateFileInfoFunc);
 
             QThread *workerThread = new QThread();
@@ -125,16 +117,27 @@ void MainWindow::on_searchButton_clicked()
 
 /* Search Thread Functions */
 
-void MainWindow::updateProgressFunc(QString file, bool skip)
+void MainWindow::updateProgressFunc(QString file, int status)
 {
+    /* 0 => Searching
+     * 1 => Skip
+     * 2 => Notfound
+     */
     QString msg;
-    if (skip)
-        msg += tr("Skip: ");
-    else
+    if (status == 0)
         msg += tr("Seaching: ");
+    else if (status == 1)
+        msg += tr("Skip: ");
+    else // == 2
+        msg += tr("Notfound: ");
     msg += file;
     msg += " ...";
     ui->labelStatus->setText(msg);
+}
+
+void MainWindow::updateProgressStopedFunc()
+{
+    ui->labelStatus->setText(tr("Stoped!"));
 }
 
 void MainWindow::updateFileInfoFunc(QStandardItemModel *model)
@@ -148,7 +151,7 @@ void MainWindow::updateFileInfoFunc(QStandardItemModel *model)
     ui->tableView_results->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     ui->tableView_results->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
     //ui->tableView_results->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
-    ui->tableView_results->setColumnHidden(3, true); // hide column 3 and show it in right widgt
+    ui->tableView_results->setColumnHidden(3, true); // target column
 
     // ui label done
     if (fileWorker->stopRequested)
@@ -160,19 +163,91 @@ void MainWindow::updateFileInfoFunc(QStandardItemModel *model)
     connect(ui->tableView_results, &QTableView::clicked, this, &MainWindow::tableRowClicked);
 }
 
+struct fileContentPositions {
+    QString content;
+    QList<qsizetype> positions;
+};
+
+fileContentPositions *contentRegex(QString &filePath, QString &target)
+{
+    /* start read content from file */
+    QString content;
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString msg = "Can not open file: ";
+        msg += filePath;
+        content += msg;
+    } else {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+
+            QString filteredLine;
+            for (QChar &c : line) {
+                if (c.isPrint()) {
+                    filteredLine.append(c);
+                }
+            }
+            content.append(filteredLine + "\n");
+        }
+    }
+    file.close();
+    /* end read content from file */
+
+    // regex work
+    QRegularExpression re(target);
+    // QRegularExpressionMatch match = re.match(content);
+    QRegularExpressionMatchIterator i = re.globalMatch(content);
+
+    fileContentPositions *ret = new fileContentPositions;
+    ret->content = content;
+    while (i.hasNext()) {
+        QRegularExpressionMatch match = i.next();
+        qsizetype start = match.capturedStart();
+        qDebug() << "Found match at position: " << start;
+        qDebug() << "Matched text: " << match.captured(0);
+        ret->positions.append(start);
+    }
+
+    return ret;
+}
+
 void MainWindow::tableRowClicked(const QModelIndex &index)
 {
     int row = index.row();
     // int col = index.column();
     QAbstractItemModel *model = ui->tableView_results->model();
-    QModelIndex v = model->index(row, 3);
-    ui->textEdit_results->setText(v.data().toString());
+    QModelIndex pp = model->index(row, 2);
+    QModelIndex tt = model->index(row, 3);
+    QString filePath = pp.data().toString();
+    QString target = tt.data().toString();
+
+    fileContentPositions *fcp = contentRegex(filePath, target);
+    ui->textEdit_results->setText(fcp->content);
+
+    QTextCursor cursor = ui->textEdit_results->textCursor();
+    // clear the format
+    cursor.select(QTextCursor::Document);
+    QTextCharFormat resetFormat;
+    cursor.mergeCharFormat(resetFormat);
+
+    for (qsizetype &p: fcp->positions) {
+        qDebug() << "p: " << p;
+        cursor.setPosition(p);
+        cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, target.length());
+        QTextCharFormat format;
+        format.setBackground(QColor("yellow"));
+        cursor.mergeCharFormat(format);
+    }
+    ui->textEdit_results->setTextCursor(cursor);
+    ui->textEdit_results->ensureCursorVisible();
+
+    delete fcp;
 }
 
 void MainWindow::on_stopButton_clicked()
 {
-    //qDebug() << "stop";
+    qDebug() << "stop button clicked";
     stopSearchThread();
-    ui->labelStatus->setText(tr("Stoped!"));
 }
 
